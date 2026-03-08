@@ -1,4 +1,5 @@
 import type { SearchResult } from "@/lib/scrapers/search";
+import { STORE_COUNT } from "@/lib/scrapers/search";
 import Image from "next/image";
 
 interface SearchResultsProps {
@@ -9,24 +10,28 @@ interface SearchResultsProps {
 export function SearchResults({ results, query }: SearchResultsProps) {
   if (results.length === 0) {
     return (
-      <div className="py-16 text-center text-foreground/50">
-        <p className="text-lg">
-          No se encontraron resultados para &ldquo;{query}&rdquo;
+      <div className="rounded-xl border border-foreground/10 bg-foreground/5 px-8 py-12 text-center">
+        <p className="text-base font-semibold text-foreground">
+          No encontramos &ldquo;{query}&rdquo; en ninguna tienda
         </p>
-        <p className="mt-2 text-sm">
-          Prueba con un término diferente o más genérico.
+        <p className="mt-2 text-sm text-foreground/60">
+          Consultamos {STORE_COUNT} tiendas. Prueba con menos palabras o una
+          búsqueda más genérica, por ejemplo: <em>Dodot talla 5</em>.
         </p>
       </div>
     );
   }
 
   const cheapestPrice = results[0]?.price;
+  const storesFound = new Set(results.map((r) => r.storeSlug)).size;
 
   return (
     <section aria-label="Resultados de búsqueda">
       <p className="mb-6 text-sm text-foreground/60">
-        {results.length} resultado{results.length !== 1 ? "s" : ""} para{" "}
-        <strong>&ldquo;{query}&rdquo;</strong> — ordenados por precio
+        <strong>{results.length}</strong> resultado
+        {results.length !== 1 ? "s" : ""} para{" "}
+        <strong>&ldquo;{query}&rdquo;</strong> en <strong>{storesFound}</strong>{" "}
+        de {STORE_COUNT} tiendas — ordenados por precio
       </p>
       <ul
         role="list"

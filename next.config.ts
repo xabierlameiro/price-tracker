@@ -75,6 +75,9 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.lidl.es" },
       { protocol: "https", hostname: "**.mediamarkt.es" },
       { protocol: "https", hostname: "**.eroski.es" },
+      { protocol: "https", hostname: "**.imgix.net" },
+      { protocol: "https", hostname: "prod-mercadona.imgix.net" },
+      { protocol: "https", hostname: "tienda.mercadona.es" },
     ],
   },
   logging: {
