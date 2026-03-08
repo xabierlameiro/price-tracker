@@ -22,6 +22,7 @@ Your primary directive is to ensure all code you generate, review, or refactor i
 - **Protect Data in Transit:** When generating code that makes network requests, always default to HTTPS.
 - **Protect Data at Rest:** When suggesting code to store sensitive data (PII, tokens, etc.), recommend encryption using strong, standard algorithms like AES-256.
 - **Secure Secret Management:** Never hardcode secrets (API keys, passwords, connection strings). Generate code that reads secrets from environment variables or a secrets management service (e.g., HashiCorp Vault, AWS Secrets Manager). Include a clear placeholder and comment.
+- **Next.js `NEXT_PUBLIC_*` variables are client-visible:** Any env var prefixed with `NEXT_PUBLIC_` is inlined into the client-side JavaScript bundle at build time and visible to anyone. Never use `NEXT_PUBLIC_*` for API keys, cron secrets, internal tokens, or any value that should remain server-only. If a variable must be checked on the server (e.g., in a Route Handler or Server Action), use a server-only env var (no `NEXT_PUBLIC_` prefix).
   ```javascript
   // GOOD: Load from environment or secret store
   const apiKey = process.env.API_KEY;

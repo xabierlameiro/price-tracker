@@ -143,6 +143,7 @@ public/                 # Static assets
 ### Security
 
 - Never hardcode secrets — use environment variables
+- Prefix env vars with `NEXT_PUBLIC_` unless the value is safe to expose to every browser user — `NEXT_PUBLIC_*` vars are bundled into the client JavaScript bundle and visible to anyone; never use them for tokens, secrets, or cron keys
 - Never print, log, or paste secret values (tokens, API keys, cookies) in chat responses, commits, or logs — this includes values _derived_ from secrets; summarize and redact; if a required secret is missing, stop and ask rather than inventing placeholder credentials
 - Validate and sanitize all user input with Zod at API boundaries
 - Follow OWASP guidelines — see `security-and-owasp.instructions.md`

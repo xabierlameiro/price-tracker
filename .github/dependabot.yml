@@ -63,6 +63,14 @@ updates:
       day: "monday"
       time: "09:00"
       timezone: "UTC"
+    groups:
+      # Batch all minor/patch GitHub Actions updates into one PR
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
     open-pull-requests-limit: 5
     rebase-strategy: "auto"
     labels:
