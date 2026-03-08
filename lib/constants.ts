@@ -8,6 +8,7 @@ export const SITE_URL =
 
 export const ROUTES = {
   home: "/",
+  search: "/search",
   signIn: "/auth/sign-in",
   signUp: "/auth/sign-up",
   dashboard: "/dashboard",
@@ -26,6 +27,7 @@ export const API_ROUTES = {
   alerts: "/api/alerts",
   stores: "/api/stores",
   scrape: "/api/scrape",
+  search: "/api/search",
 } as const;
 
 export const SCRAPE_CRON_SECRET = process.env.SCRAPE_CRON_SECRET ?? "";
