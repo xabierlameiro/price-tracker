@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Validate commit message format against conventional commits spec
+pnpm exec commitlint --edit "$1"

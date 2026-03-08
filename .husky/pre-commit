@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+# Husky pre-commit hook
+# Runs lint-staged (ESLint + Prettier) on staged files only.
+# Full quality gate (type-check + tests + build) runs in CI.
+
+set -e
+
+echo "🔍 Running lint-staged on staged files..."
+pnpm exec lint-staged --config package.json
+
+echo "🔷 Running TypeScript type check..."
+pnpm type-check
+
+echo "✅ Pre-commit checks passed."

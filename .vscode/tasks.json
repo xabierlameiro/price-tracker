@@ -1,0 +1,71 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "TypeScript: type check",
+      "type": "shell",
+      "command": "pnpm type-check",
+      "problemMatcher": ["$tsc"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "clear": true,
+        "reveal": "silent",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "ESLint: lint",
+      "type": "shell",
+      "command": "pnpm lint",
+      "problemMatcher": ["$eslint-stylish"],
+      "group": "test",
+      "presentation": {
+        "clear": true,
+        "reveal": "silent"
+      }
+    },
+    {
+      "label": "Vitest: run tests",
+      "type": "shell",
+      "command": "pnpm test",
+      "problemMatcher": [],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "clear": true,
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "Next.js: build",
+      "type": "shell",
+      "command": "pnpm build",
+      "problemMatcher": [],
+      "group": "build",
+      "presentation": {
+        "clear": true,
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "Health check: lint + typecheck + test + build",
+      "dependsOn": [
+        "TypeScript: type check",
+        "ESLint: lint",
+        "Vitest: run tests",
+        "Next.js: build"
+      ],
+      "dependsOrder": "sequence",
+      "group": "build",
+      "presentation": {
+        "clear": true,
+        "reveal": "always"
+      }
+    }
+  ]
+}

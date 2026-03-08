@@ -1,0 +1,73 @@
+version: 2
+
+updates:
+  # ─────────────────────────────────────────────────────
+  # npm / pnpm dependencies
+  # ─────────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    rebase-strategy: "auto"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    groups:
+      # Batch all patch/minor Next.js ecosystem updates
+      nextjs:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+        update-types:
+          - "minor"
+          - "patch"
+      # Batch all testing library updates
+      testing:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "@testing-library/*"
+          - "playwright"
+          - "@playwright/*"
+        update-types:
+          - "minor"
+          - "patch"
+      # Batch all lint/format tooling
+      lint-format:
+        patterns:
+          - "eslint"
+          - "@eslint/*"
+          - "eslint-*"
+          - "prettier"
+          - "typescript-eslint"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ─────────────────────────────────────────────────────
+  # GitHub Actions
+  # ─────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    rebase-strategy: "auto"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"

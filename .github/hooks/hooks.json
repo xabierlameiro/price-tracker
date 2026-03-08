@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "./.github/hooks/scripts/session-start.sh",
+        "cwd": ".",
+        "timeoutSec": 15
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "./.github/hooks/scripts/pre-tool-secret-scan.sh",
+        "cwd": ".",
+        "timeoutSec": 10
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "./.github/hooks/scripts/post-tool-check.sh",
+        "cwd": ".",
+        "timeoutSec": 60
+      }
+    ],
+    "sessionEnd": [
+      {
+        "type": "command",
+        "bash": "./.github/hooks/scripts/session-end-check.sh",
+        "cwd": ".",
+        "timeoutSec": 180
+      }
+    ]
+  }
+}

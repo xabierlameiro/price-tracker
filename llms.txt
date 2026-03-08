@@ -1,0 +1,138 @@
+# nextjs16-starter-template
+
+> Professional Next.js 16 starter template for building production-grade web applications.
+
+This repository is a ready-to-use foundation that combines Next.js 16 (App Router), React 19, TypeScript 5 strict mode, Tailwind CSS v4, Auth.js v5, Zod v4, and Zustand v5.
+
+## Tech Stack
+
+- Framework: Next.js 16.1.6 (App Router, Server Components, Turbopack default)
+- Runtime: React 19
+- Language: TypeScript 5 (strict mode, no `any`)
+- Styling: Tailwind CSS v4 (CSS-first config via `@import "tailwindcss"`)
+- Auth: Auth.js v5 / NextAuth (`next-auth@beta`, package: `next-auth`)
+- Validation: Zod v4
+- State: Zustand v5 (client state only — not for server data)
+- Testing: Vitest (unit), Playwright (E2E)
+- Package Manager: pnpm
+
+## Project Structure
+
+- `app/` — Next.js App Router (pages, layouts, route handlers, API routes)
+- `components/` — Reusable UI components (Server Components by default)
+- `lib/` — Shared utilities, constants, error types, Zod schemas
+- `hooks/` — Custom React hooks (client-side only)
+- `store/` — Zustand client state stores
+- `tests/` — Playwright E2E specs
+- `types/` — Global TypeScript type definitions
+- `.github/instructions/` — Copilot per-file coding instructions
+- `.github/agents/` — Specialized Copilot agent definitions
+- `.agents/skills/` — Reusable Copilot skill library
+
+## Key Files
+
+- `CLAUDE.md` — Context file for Claude and Anthropic-powered runtimes
+- `AGENTS.md` — Task execution guide for AI coding agents
+- `.github/copilot-instructions.md` — Main Copilot context, stack, and agent router
+- `auth.ts` — Auth.js top-level config (Next.js 16 convention)
+- `next.config.ts` — Next.js configuration
+- `vitest.config.ts` — Vitest unit test configuration
+- `playwright.config.ts` — Playwright E2E test configuration
+- `proxy.ts` — Next.js proxy/middleware configuration
+
+## Conventions
+
+- File naming: `kebab-case` for all files
+- Components: Server Components by default; `"use client"` only when strictly needed
+- Imports: use `@/` path alias for all internal imports
+- No `any` types; strict TypeScript throughout
+- All input validated with Zod at system boundaries
+- Branching: Trunk-Based Development — `main` is always releasable
+
+## Development Commands
+
+```bash
+pnpm dev          # Start dev server (Turbopack)
+pnpm build        # Production build
+pnpm test         # Vitest unit tests
+pnpm lint         # ESLint
+pnpm type-check   # TypeScript type check
+```
+
+## Quality Gate
+
+All four commands below must pass before any task is considered done:
+
+```bash
+pnpm lint && pnpm type-check && pnpm test && pnpm build
+```
+
+## AI Infrastructure
+
+This template includes a fully layered AI developer experience:
+
+### Agents (`.github/agents/`)
+
+10 specialized Copilot agents routed from `copilot-instructions.md`:
+
+- `router.agent.md` — Default agent; classifies intent and delegates to specialists
+- `feature-builder.agent.md` — Builds new features following project conventions
+- `debug.agent.md` — Systematic 4-phase bug resolution
+- `planner.agent.md` — Read-only architecture and implementation planning
+- `code-reviewer.agent.md` — Quality, security, accessibility, and performance review
+- `test-generator.agent.md` — Vitest unit tests and Playwright E2E tests
+- `architect.agent.md` — System design, Mermaid diagrams, component boundaries
+- `adr-generator.agent.md` — Architectural Decision Records
+- `prd-creator.agent.md` — Product Requirements Documents from user stories
+- `github-actions.agent.md` — CI/CD workflows and GitHub Actions
+
+### Skills (`.agents/skills/`)
+
+41 reusable skills covering: Next.js App Router, Auth.js, Zustand, Zod, Vitest, Playwright, Tailwind design systems, TypeScript advanced types, API design, error handling, performance, security, accessibility, git workflows, and more.
+
+### Instruction Files (`.github/instructions/`)
+
+13 per-file instruction files scoped with `applyTo` glob patterns:
+
+- `nextjs.instructions.md` — App Router, Server Components, caching
+- `nextjs-tailwind.instructions.md` — Tailwind CSS v4, design tokens
+- `reactjs.instructions.md` — React 19 patterns, hooks, composition
+- `typescript-5-es2022.instructions.md` — TypeScript strict-mode conventions
+- `security-and-owasp.instructions.md` — OWASP Top 10 guidance
+- `a11y.instructions.md` — WCAG 2.2 Level AA accessibility
+- `performance-optimization.instructions.md` — Next.js 16/React 19 performance
+- `nodejs-javascript-vitest.instructions.md` — Vitest unit testing
+- `playwright-typescript.instructions.md` — Playwright E2E testing
+- `context7.instructions.md` — Context7 MCP for up-to-date library docs
+- `code-review-generic.instructions.md` — Structured PR review protocol
+- `learnings.instructions.md` — `learn!` command for persisting session insights
+- `markdown.instructions.md` — Markdown formatting standards
+
+### Lifecycle Hooks (`.github/hooks/`)
+
+4-phase agent lifecycle automation:
+
+- `sessionStart` — Injects branch and Node.js version context
+- `preToolUse` — Blocks destructive commands (`rm -rf`, `DROP TABLE`)
+- `postToolUse` — Auto-runs `pnpm lint` after file edits
+- `sessionEnd` — Enforces quality gate before the agent finishes
+
+### MCP Servers (`.vscode/mcp.json`)
+
+5 MCP servers pre-configured for VS Code:
+
+- `@upstash/context7-mcp` — Authoritative, version-specific library documentation
+- `shadcn` — shadcn/ui component registry
+- `mcp-server-playwright` — Browser automation for testing
+- `next-devtools-mcp` — Next.js DevTools integration
+- GitHub MCP (`api.githubcopilot.com/mcp/`) — Issues, PRs, and repository operations
+
+## Docs
+
+- [Next.js 16 App Router](https://nextjs.org/docs/app)
+- [Auth.js v5](https://authjs.dev)
+- [Tailwind CSS v4](https://tailwindcss.com/docs)
+- [Zod v4](https://zod.dev)
+- [Zustand](https://zustand.docs.pmnd.rs)
+- [Vitest](https://vitest.dev)
+- [Playwright](https://playwright.dev)
