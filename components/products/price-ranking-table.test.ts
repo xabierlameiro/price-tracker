@@ -105,3 +105,10 @@ describe("comparablePrice", () => {
     expect(comparablePrice(row, "per100ml")).toBeNull();
   });
 });
+
+it("should return null in perUnit mode when packageSize is null", () => {
+  // Rows where only netWeight was parsed (e.g. Ahorramas/ECI diaper with no
+  // unit count in product name) must not show full pack price as €/ud.
+  const row = makeRow({ netWeight: 16000, netWeightUnit: "g", price: 25.49 });
+  expect(comparablePrice(row, "perUnit")).toBeNull();
+});

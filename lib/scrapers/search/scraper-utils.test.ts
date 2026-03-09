@@ -205,6 +205,20 @@ describe("parseProductQuantity", () => {
         packageSize: 42,
       });
     });
+
+    it("should parse ECI-style UNID. abbreviation as unit count", () => {
+      // El Corte Inglés product names use "UNID." abbreviation: "42 UNID. T-5"
+      expect(parseProductQuantity("DODOT SENSITIVE T5 17 KG 42 UNID.")).toEqual(
+        { packageSize: 42 },
+      );
+    });
+
+    it("should prioritise keyword unit count over weight when both appear in name", () => {
+      // Weight label appears before unit count in the string — unit count wins
+      expect(parseProductQuantity("Pañales T5 17 kg 44 uds")).toEqual({
+        packageSize: 44,
+      });
+    });
   });
 });
 
