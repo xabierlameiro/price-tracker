@@ -602,20 +602,38 @@ describe("parseProductQuantity", () => {
     });
   });
 
-  describe("weight position ordering (BUG #2)", () => {
-    it("should NOT spread weight when it appears BEFORE the unit count", () => {
+  describe("weight position ordering (BUG #2 + BUG #6)", () => {
+    it("should NOT spread solid weight when it appears BEFORE the unit count", () => {
       // "150g 8 ud." — weight precedes count → 150g is total pack weight, not per-slice
       expect(parseProductQuantity("Queso lonchas Larsa 150g 8 ud.")).toEqual({
         packageSize: 8,
       });
     });
 
-    it("should STILL spread weight when it appears AFTER the unit count", () => {
-      // Existing behaviour must be preserved: "12 uds 100ml" → per-unit volume
+    it("should spread liquid volume when it appears AFTER the unit count", () => {
+      // Liquids: each container is a self-contained unit — spread per-unit volume
       expect(parseProductQuantity("Actimel L.Casei 12 uds 100ml")).toEqual({
         packageSize: 12,
         netWeight: 100,
         netWeightUnit: "ml",
+      });
+    });
+
+    it("should use solid weight as total pack weight when it appears AFTER the unit count (BUG #6)", () => {
+      // "12 uds. 250g" — in Spanish naming, the weight is TOTAL pack weight (not 12×250g=3kg)
+      // A pack of 12 cheese slices weighing 250g total → €/kg based on 250g
+      expect(
+        parseProductQuantity("LARSA Queso en lonchas cremoso 12 uds. 250 g."),
+      ).toEqual({
+        netWeight: 250,
+        netWeightUnit: "g",
+      });
+    });
+
+    it("should use solid weight as total pack weight for generic 'N uds Xg' pattern", () => {
+      expect(parseProductQuantity("Queso lonchas 12 uds 250g")).toEqual({
+        netWeight: 250,
+        netWeightUnit: "g",
       });
     });
   });

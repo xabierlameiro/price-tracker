@@ -499,12 +499,20 @@ function tryParseContainerCount(name: string): ParsedQuantity | null {
 
 /**
  * Try to extract a keyword-based unit count: "44 uds", "42 UNID.", "42 pañales".
- * Also enriches the result with per-unit weight/volume when the weight appears
- * AFTER the unit count in the string — weight-after = per-unit weight.
- * When weight appears BEFORE the unit count, it describes the total pack weight
- * (e.g. "Queso 150g 8 ud." = 150g total for 8 slices, not 8×150g).
- * Baby-size weight labels ("T5 17 kg") are stripped by tryParseWeightQuantity before
- * extraction, so diapers remain safe ("DODOT T5 17 KG 42 UNID." → {packageSize:42}).
+ *
+ * Weight handling follows Spanish supermarket naming conventions:
+ *
+ * LIQUIDS (ml): volume is always per-container regardless of position.
+ *   "6 latas 33cl"  → { packageSize:6, netWeight:330, ml }  (6 × 33cl cans)
+ *   "33cl 6 uds"    → { packageSize:6, netWeight:330, ml }  (same, volume before count)
+ *
+ * SOLIDS (g): weight is always the TOTAL PACK weight, never per-unit.
+ *   "12 uds. 250g"  → { netWeight:250, g }   (250g pack of 12 slices, not 12×250g)
+ *   "150g 8 ud."    → { packageSize:8 }       (150g total → already discarded before count)
+ *   Per-unit solid weight uses the explicit "×" separator: "4u × 125g" → 4 × 125g (handled here).
+ *
+ * Baby-size weight labels ("T5 17 kg") are stripped by tryParseWeightQuantity so
+ * diapers remain safe ("DODOT T5 17 KG 42 UNID." → {packageSize:42}).
  */
 function tryParseKeywordUnitCount(name: string): ParsedQuantity | null {
   const m = UNIT_COUNT_GENERIC_RE.exec(name);
@@ -516,11 +524,27 @@ function tryParseKeywordUnitCount(name: string): ParsedQuantity | null {
   const weightIdx = Math.min(mwIdx, swIdx);
 
   const weight = tryParseWeightQuantity(name);
-  // Liquid products (ml): volume is always per individual container — spread regardless
-  // of position ("33cl 6 unidades" means 6 × 33cl cans, not 33cl split across 6).
-  // Solid products (g): weight-before-count = total pack weight (e.g. "150g 8 ud.").
-  const shouldSpread = weight?.netWeightUnit === "ml" || weightIdx > m.index;
-  return shouldSpread ? { packageSize, ...weight } : { packageSize };
+
+  if (weight?.netWeightUnit === "ml") {
+    // Liquid: each container holds its own volume — always spread as per-unit
+    return { packageSize, ...weight };
+  }
+
+  if (weight && weightIdx > m.index) {
+    // Check for an explicit "×" or "x" multiplier between the count and the weight.
+    // "4u × 125g" / "4u x 125g" → per-unit weight (spread); "12 uds. 250g" → total pack weight.
+    const countEnd = m.index + m[0].length;
+    const between = name.slice(countEnd, weightIdx).toLowerCase();
+    if (/×|\bx\b/.test(between)) {
+      return { packageSize, ...weight };
+    }
+    // No explicit multiplier → solid weight is the total pack weight (drop count).
+    return { netWeight: weight.netWeight, netWeightUnit: weight.netWeightUnit };
+  }
+
+  // No weight found, or solid weight appears before count (e.g. "150g 8 ud."):
+  // keep the count for per-unit comparison.
+  return { packageSize };
 }
 
 /**
