@@ -71,6 +71,8 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
           source: "SCRAPE" as const,
           isAvailable: result.isAvailable,
           packageSize: result.packageSize ?? null,
+          netWeight: result.netWeight ?? null,
+          netWeightUnit: result.netWeightUnit ?? null,
           storeName: result.storeName,
         },
       ];

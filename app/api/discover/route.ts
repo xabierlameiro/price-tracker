@@ -84,11 +84,14 @@ export async function POST(request: NextRequest) {
             productId: product.id,
             storeId: store.id,
             price: result.price,
+            subscribePrice: result.subscribePrice ?? null,
             currency: result.currency,
             url: result.productUrl ?? null,
             source: "SCRAPE",
             isAvailable: result.isAvailable,
             packageSize: result.packageSize ?? null,
+            netWeight: result.netWeight ?? null,
+            netWeightUnit: result.netWeightUnit ?? null,
           },
         });
 

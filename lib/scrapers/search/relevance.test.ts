@@ -38,6 +38,49 @@ describe("isRelevant", () => {
       isRelevant("Bezoya agua con gas 750 ml", "agua con gas bezoya"),
     ).toBe(true);
   });
+
+  // ── Variant discriminator tests ───────────────────────────────────────────
+  // With 5 word tokens, 80% allows exactly 4 to match (4/5 = 0.8 ≥ 0.8).
+  // Variant discriminators ensure that model/flavour keywords in the query
+  // are always required in the product name, regardless of token count.
+
+  it("should fail for 'Dodot Aqua & Piel' when query contains variant discriminator 'pure'", () => {
+    // 5 word tokens: dodot, bebe, toallitas, pure, aqua
+    // "pure" is a discriminator → must be present; "Aqua & Piel" lacks it
+    expect(
+      isRelevant(
+        "Dodot Aqua & Piel Bebé Toallitas 64 uds",
+        "dodot bebé toallitas pure aqua 48",
+      ),
+    ).toBe(false);
+  });
+
+  it("should pass for 'Dodot Pure Aqua' when query contains 'pure'", () => {
+    expect(
+      isRelevant(
+        "Dodot Pure Aqua Bebé Toallitas 48 uds",
+        "dodot bebé toallitas pure aqua 48",
+      ),
+    ).toBe(true);
+  });
+
+  it("should fail for yogur fresa when query requests yogur natural", () => {
+    // "natural" is a discriminator → must be present in result name
+    expect(
+      isRelevant("Danone Activia Fresa 4x125g", "danone activia natural"),
+    ).toBe(false);
+  });
+
+  it("should pass for yogur natural when query requests yogur natural", () => {
+    expect(
+      isRelevant("Danone Activia Natural 4x125g", "danone activia natural"),
+    ).toBe(true);
+  });
+
+  it("should not trigger discriminator check for tokens that are not discriminators", () => {
+    // "dodot" and "talla" are not discriminators — regular 80% check applies
+    expect(isRelevant("Dodot Sensitive T5 44 uds", "dodot talla 5")).toBe(true);
+  });
 });
 
 // ── filterVariantConflicts ────────────────────────────────────────────────────

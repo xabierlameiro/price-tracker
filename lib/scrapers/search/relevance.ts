@@ -112,9 +112,55 @@ export function isRelevant(productName: string, query: string): boolean {
   const words = tokens.filter((t) => !/^\d+$/.test(t));
   if (words.length === 0) return true;
 
+  // ── Variant discriminator strict check ───────────────────────────────────
+  // Query words that are known variant-identifying terms (model names, flavours,
+  // fat-content qualifiers) must appear verbatim in the product name.
+  // The 80% threshold alone is too permissive: for a 5-token query, 4/5 = 0.8
+  // passes, letting one differentiating word like "pure" be absent — which
+  // would incorrectly admit "Dodot Aqua & Piel" for a "dodot pure aqua" query.
+  for (const t of words) {
+    if (VARIANT_DISCRIMINATORS.has(t) && !normName.includes(t)) return false;
+  }
+
   const matched = words.filter((t) => normName.includes(t));
   return matched.length / words.length >= 0.8;
 }
+
+// Terms that identify specific product variants (model names, flavours, dietary
+// qualifiers). When any of these appear in the query they MUST also appear in
+// the product name — the 80% fuzzy threshold is too permissive for a 5-token
+// query (4/5 = 0.8 passes), which would let a differentiating word like "pure"
+// be silently absent and allow "Dodot Aqua & Piel" to match "dodot pure aqua".
+const VARIANT_DISCRIMINATORS = new Set([
+  // Dodot / wipe-line model names
+  "pure",
+  "sensitive",
+  "activity",
+  // Pampers line names
+  "harmonie",
+  // Dairy / food fat-content variants
+  "desnatado",
+  "semidesnatado",
+  "entero",
+  "integral",
+  // Flavour and variety qualifiers
+  "natural",
+  "fresa",
+  "frambuesa",
+  "limon",
+  "naranja",
+  "mango",
+  "tropical",
+  "vainilla",
+  "chocolate",
+  "platano",
+  "melocoton",
+  "pistacho",
+  "cacao",
+  // Generic differentiators
+  "original",
+  "clasico",
+]);
 
 // ── Variant-conflict filter ───────────────────────────────────────────────────
 // Carbonated vs still is the most common variant mismatch in food/drink searches.
