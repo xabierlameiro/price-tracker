@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   parseProductQuantity,
   fetchHtml,
@@ -5,13 +6,36 @@ import {
 } from "./scraper-utils";
 import type { SearchContext, SearchResult, StoreSearchScraper } from "./types";
 
-// Product shape from window.__MOONSHINE_STATE__.viewData.plp.products
-type EciProduct = {
-  description?: string;
-  priceSpecification?: { price?: string; salePrice?: string };
-  url?: string;
-  image?: string;
-};
+const MoonshineProductSchema = z
+  .object({
+    description: z.string().optional(),
+    priceSpecification: z
+      .object({
+        price: z.string().optional(),
+        salePrice: z.string().optional(),
+      })
+      .loose()
+      .optional(),
+    url: z.string().optional(),
+    image: z.string().optional(),
+  })
+  .loose();
+
+const MoonshineStateSchema = z
+  .object({
+    viewData: z
+      .object({
+        plp: z
+          .object({ products: z.array(MoonshineProductSchema).optional() })
+          .loose()
+          .optional(),
+      })
+      .loose()
+      .optional(),
+  })
+  .loose();
+
+type MoonshineProduct = z.infer<typeof MoonshineProductSchema>;
 
 /** Find the position of the matching closing `}` for the `{` at `start`. */
 function findJsonEnd(html: string, start: number): number {
@@ -44,31 +68,34 @@ function findJsonEnd(html: string, start: number): number {
 }
 
 /**
- * Extract the JSON assigned to `window.__MOONSHINE_STATE__` in raw HTML.
- * ECI server-side renders all product data into this global before shipping HTML.
+ * Extract and validate the JSON assigned to `window.__MOONSHINE_STATE__` in raw
+ * HTML. ECI server-side renders all product data into this global before shipping.
  */
-function extractMoonshineState(html: string): Record<string, unknown> | null {
+function extractMoonshineProducts(html: string): MoonshineProduct[] {
   const markerIdx = html.indexOf("window.__MOONSHINE_STATE__");
-  if (markerIdx === -1) return null;
+  if (markerIdx === -1) return [];
 
   const jsonStart = html.indexOf("{", markerIdx);
-  if (jsonStart === -1) return null;
+  if (jsonStart === -1) return [];
 
   const jsonEnd = findJsonEnd(html, jsonStart);
-  if (jsonEnd === -1) return null;
+  if (jsonEnd === -1) return [];
 
+  let raw: unknown;
   try {
-    return JSON.parse(html.slice(jsonStart, jsonEnd + 1)) as Record<
-      string,
-      unknown
-    >;
+    raw = JSON.parse(html.slice(jsonStart, jsonEnd + 1));
   } catch {
-    return null;
+    return [];
   }
+
+  const parsed = MoonshineStateSchema.safeParse(raw);
+  if (!parsed.success) return [];
+
+  return parsed.data.viewData?.plp?.products ?? [];
 }
 
 function toSearchResult(
-  product: EciProduct,
+  product: MoonshineProduct,
   storeSlug: string,
   storeName: string,
 ): SearchResult | null {
@@ -108,10 +135,7 @@ export class ElCorteInglesSearchScraper implements StoreSearchScraper {
     const html = await fetchHtml(url);
     if (!html) return [];
 
-    const state = extractMoonshineState(html);
-    const plp = (state?.viewData as Record<string, unknown> | undefined)
-      ?.plp as Record<string, unknown> | undefined;
-    const products = (plp?.products ?? []) as EciProduct[];
+    const products = extractMoonshineProducts(html);
 
     return products
       .map((p) => toSearchResult(p, this.storeSlug, this.storeName))

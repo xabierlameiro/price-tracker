@@ -1,8 +1,27 @@
 import * as cheerio from "cheerio";
+import { z } from "zod";
 import { resolveGtmItemQuantity } from "./scraper-utils";
 import type { SearchContext, SearchResult, StoreSearchScraper } from "./types";
 
 const BASE_URL = "https://supermercado.eroski.es";
+
+const GtmItemSchema = z
+  .object({
+    item_id: z.string().optional(),
+    item_name: z.string().optional(),
+    price: z.number().optional(),
+    item_variant: z.string().optional(),
+  })
+  .loose();
+
+const GtmMetricsSchema = z
+  .object({
+    ecommerce: z
+      .object({ items: z.array(GtmItemSchema).optional() })
+      .loose()
+      .optional(),
+  })
+  .loose();
 
 export class EroskiSearchScraper implements StoreSearchScraper {
   readonly storeSlug = "eroski";
@@ -41,23 +60,29 @@ export class EroskiSearchScraper implements StoreSearchScraper {
       const metricsRaw = $(el).attr("data-metrics");
       if (!metricsRaw) return;
 
-      let metrics: { ecommerce?: { items?: Array<Record<string, unknown>> } };
+      let parsed: unknown;
       try {
-        metrics = JSON.parse(metricsRaw) as typeof metrics;
+        parsed = JSON.parse(metricsRaw);
       } catch {
         return;
       }
 
-      const items = metrics.ecommerce?.items;
+      const result = GtmMetricsSchema.safeParse(parsed);
+      if (!result.success) return;
+
+      const items = result.data.ecommerce?.items;
       if (!items?.length) return;
 
       const item = items[0];
-      const id = item["item_id"] as string | undefined;
+      const {
+        item_id: id,
+        item_name: productName,
+        price,
+        item_variant: itemVariant,
+      } = item;
       if (!id || seen.has(id)) return;
       seen.add(id);
 
-      const productName = item["item_name"] as string | undefined;
-      const price = item["price"] as number | undefined;
       if (!productName || price == null || price <= 0) return;
 
       const productUrl =
@@ -77,10 +102,7 @@ export class EroskiSearchScraper implements StoreSearchScraper {
         imageUrl: `${BASE_URL}//images/${id}.jpg`,
         productUrl,
         isAvailable: true,
-        ...resolveGtmItemQuantity(
-          productName,
-          item["item_variant"] as string | undefined,
-        ),
+        ...resolveGtmItemQuantity(productName, itemVariant),
       });
     });
 

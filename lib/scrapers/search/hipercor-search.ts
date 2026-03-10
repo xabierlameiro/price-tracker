@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   parseProductQuantity,
   fetchHtml,
@@ -17,13 +18,36 @@ import type { SearchContext, SearchResult, StoreSearchScraper } from "./types";
 // exposes window.__MOONSHINE_STATE__ in its SSR HTML. We fetch from ECI's domain
 // and tag results with the "hipercor" storeSlug so price history remains separate.
 
-// Product shape from window.__MOONSHINE_STATE__.viewData.plp.products
-type MoonshineProduct = {
-  description?: string;
-  priceSpecification?: { price?: string; salePrice?: string };
-  url?: string;
-  image?: string;
-};
+const MoonshineProductSchema = z
+  .object({
+    description: z.string().optional(),
+    priceSpecification: z
+      .object({
+        price: z.string().optional(),
+        salePrice: z.string().optional(),
+      })
+      .loose()
+      .optional(),
+    url: z.string().optional(),
+    image: z.string().optional(),
+  })
+  .loose();
+
+const MoonshineStateSchema = z
+  .object({
+    viewData: z
+      .object({
+        plp: z
+          .object({ products: z.array(MoonshineProductSchema).optional() })
+          .loose()
+          .optional(),
+      })
+      .loose()
+      .optional(),
+  })
+  .loose();
+
+type MoonshineProduct = z.infer<typeof MoonshineProductSchema>;
 
 /** Find the position of the matching closing `}` for the `{` at `start`. */
 function findJsonEnd(html: string, start: number): number {
@@ -65,18 +89,17 @@ function extractMoonshineProducts(html: string): MoonshineProduct[] {
   const jsonEnd = findJsonEnd(html, jsonStart);
   if (jsonEnd === -1) return [];
 
+  let raw: unknown;
   try {
-    const state = JSON.parse(html.slice(jsonStart, jsonEnd + 1)) as Record<
-      string,
-      unknown
-    >;
-    const plp = (state.viewData as Record<string, unknown> | undefined)?.plp as
-      | Record<string, unknown>
-      | undefined;
-    return (plp?.products ?? []) as MoonshineProduct[];
+    raw = JSON.parse(html.slice(jsonStart, jsonEnd + 1));
   } catch {
     return [];
   }
+
+  const parsed = MoonshineStateSchema.safeParse(raw);
+  if (!parsed.success) return [];
+
+  return parsed.data.viewData?.plp?.products ?? [];
 }
 
 export class HipercorSearchScraper implements StoreSearchScraper {
