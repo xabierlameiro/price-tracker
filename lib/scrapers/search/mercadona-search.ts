@@ -193,7 +193,7 @@ const MercadonaCategoryResponseSchema = z
   })
   .loose();
 
-type MercadonaTopCategory = {
+export type MercadonaTopCategory = {
   id?: string | number;
   name?: string;
   categories?: Array<{ id?: string | number; name?: string }>;
@@ -230,7 +230,7 @@ async function fetchTopCategories(): Promise<MercadonaTopCategory[]> {
   }
 }
 
-function normText(s: string): string {
+export function normText(s: string): string {
   return s
     .toLowerCase()
     .normalize("NFD")
@@ -240,10 +240,42 @@ function normText(s: string): string {
 }
 
 /**
- * Returns the Mercadona category IDs most relevant to the query. Matches query
- * keywords against top-level category names. Always includes category 217
- * (Toallitas y pañales) as a fallback so existing diaper/wipe searches keep
- * working even if dynamic discovery finds no match.
+ * Pure helper: given a pre-fetched category tree and a normalised keyword list,
+ * returns the matching category IDs (top-level and sub-level).
+ * Exported for unit testing.
+ */
+export function matchCategoryIds(
+  categories: MercadonaTopCategory[],
+  keywords: string[],
+): string[] {
+  const matched = new Set<string>();
+
+  for (const cat of categories) {
+    const catName = normText(cat.name ?? "");
+    if (keywords.some((kw) => catName.includes(kw))) {
+      const id = String(cat.id ?? "").trim();
+      if (id) matched.add(id);
+    }
+    // Always check subcategory names — they are more specific than top-level
+    // (e.g. "Toallitas y pañales" lives under top-level "Bebé")
+    for (const sub of cat.categories ?? []) {
+      const subName = normText(sub.name ?? "");
+      if (keywords.some((kw) => subName.includes(kw))) {
+        const subId = String(sub.id ?? "").trim();
+        if (subId) matched.add(subId);
+      }
+    }
+  }
+
+  return [...matched];
+}
+
+/**
+ * Returns the Mercadona category IDs most relevant to the query.
+ * Matches query keywords against both top-level and subcategory names so that
+ * non-diaper product types (milk, yogurt, water, …) are found dynamically.
+ * Returns an empty array when no match is found — the scraper then returns 0
+ * results for this store rather than browsing an unrelated category.
  */
 async function resolveCategoryIds(query: string): Promise<string[]> {
   const topCategories = await fetchTopCategories();
@@ -251,24 +283,11 @@ async function resolveCategoryIds(query: string): Promise<string[]> {
     .split(/\s+/)
     .filter((w) => w.length >= 3);
 
-  const matched: string[] = [];
-  for (const cat of topCategories) {
-    const catName = normText(cat.name ?? "");
-    if (keywords.some((kw) => catName.includes(kw))) {
-      const id = String(cat.id ?? "").trim();
-      if (id) matched.push(id);
-      // Also include direct sub-categories if available in the tree response
-      for (const sub of cat.categories ?? []) {
-        const subId = String(sub.id ?? "").trim();
-        if (subId) matched.push(subId);
-      }
-    }
-  }
+  if (keywords.length === 0) return [];
 
-  const DIAPERS_CATEGORY_ID = "217";
-  if (!matched.includes(DIAPERS_CATEGORY_ID)) matched.push(DIAPERS_CATEGORY_ID);
+  const matched = matchCategoryIds(topCategories, keywords);
   // Cap at 3 categories to stay within the per-scraper timeout budget.
-  return [...new Set(matched)].slice(0, 3);
+  return matched.slice(0, 3);
 }
 
 async function fetchCategoryProducts(
