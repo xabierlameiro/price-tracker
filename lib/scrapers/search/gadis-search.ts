@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { parseProductQuantity } from "./scraper-utils";
 import type { SearchContext, SearchResult, StoreSearchScraper } from "./types";
 
@@ -8,12 +9,27 @@ const GADIS_STORE_ID = "891d5c1e-a7a0-4287-9ea3-30c5703a4f63";
 const GADIS_API_URL =
   "https://catalog.gadisline.com/api/v3/catalog/products/search?page_number=0&rows_per_page=20&keep_request=true&order_field=relevance&sort_type=asc";
 
-type GadisProduct = {
-  commercial_description?: Array<{ language: string; value: string }>;
-  price?: number;
-  slug?: string;
-  image?: { image?: string; image_thumbnails?: string };
-};
+const GadisProductSchema = z
+  .object({
+    commercial_description: z
+      .array(z.object({ language: z.string(), value: z.string() }))
+      .optional(),
+    price: z.number().optional(),
+    slug: z.string().optional(),
+    image: z
+      .object({
+        image: z.string().optional(),
+        image_thumbnails: z.string().optional(),
+      })
+      .optional(),
+  })
+  .loose();
+
+type GadisProduct = z.infer<typeof GadisProductSchema>;
+
+const GadisResponseSchema = z
+  .object({ elements: z.array(GadisProductSchema).optional() })
+  .loose();
 
 function toSearchResult(
   product: GadisProduct,
@@ -68,7 +84,15 @@ export class GadisSearchScraper implements StoreSearchScraper {
 
       if (!response.ok) return [];
 
-      const data = (await response.json()) as { elements?: GadisProduct[] };
+      const parsed = GadisResponseSchema.safeParse(await response.json());
+      if (!parsed.success) {
+        console.warn(
+          "[gadis-search] Unexpected API response shape:",
+          parsed.error.issues[0]?.message,
+        );
+        return [];
+      }
+      const { data } = parsed;
       return (data.elements ?? [])
         .map((p) => toSearchResult(p, this.storeSlug, this.storeName))
         .filter((r): r is SearchResult => r !== null)

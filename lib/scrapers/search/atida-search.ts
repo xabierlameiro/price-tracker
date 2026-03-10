@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { parseProductQuantity } from "./scraper-utils";
 import type { SearchContext, SearchResult, StoreSearchScraper } from "./types";
 
@@ -17,21 +18,24 @@ const API_KEY =
 const INDEX = "atida_es_es_products";
 const ALGOLIA_URL = `https://${APP_ID}-dsn.algolia.net/1/indexes/${INDEX}/query`;
 
-type AlgoliaHit = {
-  name: string;
-  price: { EUR: { default: number } };
-  url: string;
-  image_url?: string;
-  /** e.g. "90.0000 Piece", "500.0000 Milliliter", "250.0000 Gram", "1.0000 Kilogram" */
-  content_size?: string;
-  /** Multi-pack multiplier — 2 means the pack contains 2 × content_size units */
-  content_size_factor?: number;
-};
+const AlgoliaHitSchema = z
+  .object({
+    name: z.string(),
+    price: z.object({ EUR: z.object({ default: z.number() }) }),
+    url: z.string(),
+    image_url: z.string().optional(),
+    /** e.g. "90.0000 Piece", "500.0000 Milliliter", "250.0000 Gram", "1.0000 Kilogram" */
+    content_size: z.string().optional(),
+    /** Multi-pack multiplier — 2 means the pack contains 2 × content_size units */
+    content_size_factor: z.number().optional(),
+  })
+  .loose();
 
-type AlgoliaResponse = {
-  hits: AlgoliaHit[];
-  nbHits: number;
-};
+type AlgoliaHit = z.infer<typeof AlgoliaHitSchema>;
+
+const AlgoliaResponseSchema = z
+  .object({ hits: z.array(AlgoliaHitSchema), nbHits: z.number() })
+  .loose();
 
 type QuantityFields = Pick<
   SearchResult,
@@ -109,7 +113,6 @@ export class AtidaSearchScraper implements StoreSearchScraper {
   readonly storeName = "Atida / MiFarma";
 
   async search({ query }: SearchContext): Promise<SearchResult[]> {
-    let data: AlgoliaResponse;
     try {
       const response = await fetch(ALGOLIA_URL, {
         method: "POST",
@@ -121,21 +124,28 @@ export class AtidaSearchScraper implements StoreSearchScraper {
         body: JSON.stringify({ query, hitsPerPage: 5 }),
       });
       if (!response.ok) return [];
-      data = (await response.json()) as AlgoliaResponse;
+      const parsed = AlgoliaResponseSchema.safeParse(await response.json());
+      if (!parsed.success) {
+        console.warn(
+          "[atida-search] Unexpected API response shape:",
+          parsed.error.issues[0]?.message,
+        );
+        return [];
+      }
+      const { data } = parsed;
+      return data.hits.map((hit) => ({
+        storeSlug: this.storeSlug,
+        storeName: this.storeName,
+        productName: hit.name,
+        price: hit.price.EUR.default,
+        currency: "EUR",
+        imageUrl: hit.image_url ?? null,
+        productUrl: hit.url,
+        isAvailable: true,
+        ...resolveAtidaQuantity(hit),
+      }));
     } catch {
       return [];
     }
-
-    return data.hits.map((hit) => ({
-      storeSlug: this.storeSlug,
-      storeName: this.storeName,
-      productName: hit.name,
-      price: hit.price.EUR.default,
-      currency: "EUR",
-      imageUrl: hit.image_url ?? null,
-      productUrl: hit.url,
-      isAvailable: true,
-      ...resolveAtidaQuantity(hit),
-    }));
   }
 }

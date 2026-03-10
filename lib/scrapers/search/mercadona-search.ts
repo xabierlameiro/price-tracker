@@ -150,51 +150,142 @@ async function lookupByEan(ean: string): Promise<SearchResult | null> {
   }
 }
 
-// The /api/search/ endpoint was removed from Mercadona's API.
-// Fallback: browse category 217 ("Toallitas y pañales") and filter by query keywords.
-// This covers the only product category tracked by this app.
-const DIAPERS_CATEGORY_ID = "217";
+// ── Text-search fallback ──────────────────────────────────────────────────────
+//
+// Mercadona's /api/search/ endpoint was removed, so we fall back to browsing
+// categories. We try two strategies in order:
+//
+//   1. Dynamic — fetch the full category tree and pick the 1–2 categories whose
+//      name best matches the query keywords. Works for any product type.
+//
+//   2. Static  — if the category tree fetch fails or returns no match, browse
+//      category 217 ("Toallitas y pañales") which is the known fallback for the
+//      diapers/wipes use-case this app was originally built for.
 
 type MercadonaCategoryResponse = { categories?: MercadonaCategory[] };
 
-async function searchByText(query: string): Promise<SearchResult[]> {
+type MercadonaTopCategory = {
+  id?: string | number;
+  name?: string;
+  categories?: Array<{ id?: string | number; name?: string }>;
+};
+
+// Process-level cache — effective for warm serverless invocations.
+let _topCategoryCache: MercadonaTopCategory[] | null = null;
+
+async function fetchTopCategories(): Promise<MercadonaTopCategory[]> {
+  if (_topCategoryCache) return _topCategoryCache;
   try {
-    const url = `${BASE}/categories/${DIAPERS_CATEGORY_ID}/?lang=${LANG}&wh=${WH}`;
+    const url = `${BASE}/categories/?lang=${LANG}&wh=${WH}`;
     const response = await browserClient.fetch(url, {
-      timeout: 10_000,
+      timeout: 5_000,
       headers: { Accept: "application/json" },
     });
     if (!response.ok) return [];
-
-    const data = (await response.json()) as MercadonaCategoryResponse;
-    const allProducts = (data.categories ?? []).flatMap(
-      (cat) => cat.products ?? [],
-    );
-
-    // Keyword filter (≥ 2 chars) so the relevance filter in searchAllStores can
-    // further evaluate each result — we prefer recall over precision here.
-    const keywords = query
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .split(/\s+/)
-      .filter((w) => w.length >= 2);
-
-    const matched = allProducts.filter((p) => {
-      const name = String(p.display_name ?? "")
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
-      return keywords.some((kw) => name.includes(kw));
-    });
-
-    return matched.slice(0, 10).flatMap((p) => {
-      const result = toSearchResult(p);
-      return result ? [result] : [];
-    });
+    const raw = (await response.json()) as unknown;
+    const rec = raw as Record<string, unknown>;
+    let arr: MercadonaTopCategory[];
+    if (Array.isArray(raw)) {
+      arr = raw as MercadonaTopCategory[];
+    } else if (Array.isArray(rec.results)) {
+      arr = rec.results as MercadonaTopCategory[];
+    } else if (Array.isArray(rec.categories)) {
+      arr = rec.categories as MercadonaTopCategory[];
+    } else {
+      arr = [];
+    }
+    _topCategoryCache = arr;
+    return arr;
   } catch {
     return [];
   }
+}
+
+function normText(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .trim();
+}
+
+/**
+ * Returns the Mercadona category IDs most relevant to the query. Matches query
+ * keywords against top-level category names. Always includes category 217
+ * (Toallitas y pañales) as a fallback so existing diaper/wipe searches keep
+ * working even if dynamic discovery finds no match.
+ */
+async function resolveCategoryIds(query: string): Promise<string[]> {
+  const topCategories = await fetchTopCategories();
+  const keywords = normText(query)
+    .split(/\s+/)
+    .filter((w) => w.length >= 3);
+
+  const matched: string[] = [];
+  for (const cat of topCategories) {
+    const catName = normText(cat.name ?? "");
+    if (keywords.some((kw) => catName.includes(kw))) {
+      const id = String(cat.id ?? "").trim();
+      if (id) matched.push(id);
+      // Also include direct sub-categories if available in the tree response
+      for (const sub of cat.categories ?? []) {
+        const subId = String(sub.id ?? "").trim();
+        if (subId) matched.push(subId);
+      }
+    }
+  }
+
+  const DIAPERS_CATEGORY_ID = "217";
+  if (!matched.includes(DIAPERS_CATEGORY_ID)) matched.push(DIAPERS_CATEGORY_ID);
+  // Cap at 3 categories to stay within the per-scraper timeout budget.
+  return [...new Set(matched)].slice(0, 3);
+}
+
+async function fetchCategoryProducts(
+  categoryId: string,
+): Promise<MercadonaProduct[]> {
+  try {
+    const url = `${BASE}/categories/${categoryId}/?lang=${LANG}&wh=${WH}`;
+    const response = await browserClient.fetch(url, {
+      timeout: 8_000,
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return [];
+    const data = (await response.json()) as MercadonaCategoryResponse;
+    return (data.categories ?? []).flatMap((cat) => cat.products ?? []);
+  } catch {
+    return [];
+  }
+}
+
+async function searchByText(query: string): Promise<SearchResult[]> {
+  const categoryIds = await resolveCategoryIds(query);
+  const productArrays = await Promise.all(
+    categoryIds.map(fetchCategoryProducts),
+  );
+  const allProducts = productArrays.flat();
+
+  // Keyword filter (≥ 2 chars) — prefer recall; the relevance filter in
+  // searchAllStores will do the final precision cut.
+  const keywords = normText(query)
+    .split(/\s+/)
+    .filter((w) => w.length >= 2);
+
+  const seen = new Set<string>();
+  const matched: MercadonaProduct[] = [];
+  for (const p of allProducts) {
+    const id = String(p.id ?? "");
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const name = normText(p.display_name ?? "");
+    if (keywords.some((kw) => name.includes(kw))) matched.push(p);
+  }
+
+  return matched.slice(0, 10).flatMap((p) => {
+    const result = toSearchResult(p);
+    return result ? [result] : [];
+  });
 }
 
 export class MercadonaSearchScraper implements StoreSearchScraper {

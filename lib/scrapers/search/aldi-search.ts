@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { parseProductQuantity } from "./scraper-utils";
 import type { SearchContext, SearchResult, StoreSearchScraper } from "./types";
 
@@ -10,16 +11,27 @@ const ALGOLIA_API_KEY = "19b0e28f08344395447c7bdeea32da58";
 const ALGOLIA_INDEXES = ["prod_es_es_es_assortment", "prod_es_es_es_offers"];
 const ALGOLIA_URL = `https://${ALGOLIA_APP_ID.toLowerCase()}-dsn.algolia.net/1/indexes/*/queries`;
 
-interface AlgoliaHit {
-  productName?: string;
-  brandName?: string;
-  salesPrice?: number;
-  productUrl?: string;
-  productPicture?: string;
-  availability?: string;
-  // Structured quantity fields — more reliable than parsing the product name
-  salesUnit?: string; // e.g. "250 g unidad", "pack de 12 x 0,33 l", "unidad"
-}
+const AlgoliaHitSchema = z
+  .object({
+    productName: z.string().optional(),
+    brandName: z.string().optional(),
+    salesPrice: z.number().optional(),
+    productUrl: z.string().optional(),
+    productPicture: z.string().optional(),
+    availability: z.string().optional(),
+    salesUnit: z.string().optional(),
+  })
+  .loose();
+
+type AlgoliaHit = z.infer<typeof AlgoliaHitSchema>;
+
+const AlgoliaMultiIndexResponseSchema = z
+  .object({
+    results: z.array(
+      z.object({ hits: z.array(AlgoliaHitSchema).default([]) }).loose(),
+    ),
+  })
+  .loose();
 
 // Prefer structured salesUnit over product name for quantity. Aldi product names
 // rarely embed size info, but salesUnit always contains it in a clean format.
@@ -108,9 +120,17 @@ export class AldiSearchScraper implements StoreSearchScraper {
 
     if (!response.ok) return [];
 
-    const json = (await response.json()) as {
-      results: { hits: AlgoliaHit[] }[];
-    };
+    const parsed = AlgoliaMultiIndexResponseSchema.safeParse(
+      await response.json(),
+    );
+    if (!parsed.success) {
+      console.warn(
+        "[aldi-search] Unexpected API response shape:",
+        parsed.error.issues[0]?.message,
+      );
+      return [];
+    }
+    const { data: json } = parsed;
     const seen = new Set<string>();
     const results: SearchResult[] = [];
 

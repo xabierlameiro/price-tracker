@@ -1,26 +1,33 @@
+import { z } from "zod";
 import { parseProductQuantity } from "./scraper-utils";
 import type { SearchContext, SearchResult, StoreSearchScraper } from "./types";
 
 const BASE_URL = "https://www.online.bmsupermercados.es";
 
-interface BmProduct {
-  productData: {
-    name: string;
-    url: string;
-    imageURL: string;
-  };
-  priceData: {
-    prices: Array<{
-      value: {
-        centAmount: number;
-      };
-    }>;
-  };
-}
+const BmPriceValueSchema = z.object({ centAmount: z.number() }).loose();
 
-interface BmApiResponse {
-  products: BmProduct[];
-}
+const BmProductSchema = z
+  .object({
+    productData: z
+      .object({
+        name: z.string(),
+        url: z.string().optional(),
+        imageURL: z.string().optional(),
+      })
+      .loose(),
+    priceData: z
+      .object({
+        prices: z.array(z.object({ value: BmPriceValueSchema }).loose()),
+      })
+      .loose(),
+  })
+  .loose();
+
+type BmProduct = z.infer<typeof BmProductSchema>;
+
+const BmApiResponseSchema = z
+  .object({ products: z.array(BmProductSchema).default([]) })
+  .loose();
 
 function bmProductToResult(
   product: BmProduct,
@@ -29,10 +36,11 @@ function bmProductToResult(
 ): SearchResult | null {
   const productName = product.productData?.name?.trim();
   if (!productName) return null;
-  // BM uses Commercetools: price is in euro-cents, must divide by 100
+  // BM's Commercetools API returns prices already in EUR (e.g. 10.9 means 10.90 €),
+  // not in euro-cents like the standard Commercetools contract.
   const centAmount = product.priceData?.prices?.[0]?.value?.centAmount;
   if (!Number.isFinite(centAmount) || centAmount <= 0) return null;
-  const price = centAmount / 100;
+  const price = centAmount;
   return {
     storeSlug,
     storeName,
@@ -56,7 +64,6 @@ export class BmSearchScraper implements StoreSearchScraper {
       `&orderById=13&showProducts=true&showRecommendations=false&showRecipes=false` +
       `&q=${encodeURIComponent(query)}`;
 
-    let data: BmApiResponse;
     try {
       const response = await fetch(url, {
         headers: {
@@ -66,16 +73,23 @@ export class BmSearchScraper implements StoreSearchScraper {
         },
       });
       if (!response.ok) return [];
-      data = (await response.json()) as BmApiResponse;
+      const parsed = BmApiResponseSchema.safeParse(await response.json());
+      if (!parsed.success) {
+        console.warn(
+          "[bm-search] Unexpected API response shape:",
+          parsed.error.issues[0]?.message,
+        );
+        return [];
+      }
+      const { data } = parsed;
+      return data.products
+        .flatMap((p) => {
+          const result = bmProductToResult(p, this.storeSlug, this.storeName);
+          return result ? [result] : [];
+        })
+        .slice(0, 5);
     } catch {
       return [];
     }
-
-    return (data.products ?? [])
-      .flatMap((p) => {
-        const result = bmProductToResult(p, this.storeSlug, this.storeName);
-        return result ? [result] : [];
-      })
-      .slice(0, 5);
   }
 }

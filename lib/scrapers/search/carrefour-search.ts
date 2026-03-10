@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { parseProductQuantity } from "./scraper-utils";
 import type { SearchContext, SearchResult, StoreSearchScraper } from "./types";
 
@@ -12,23 +13,32 @@ import type { SearchContext, SearchResult, StoreSearchScraper } from "./types";
 // These are used in preference to regex-based product name parsing.
 const EMPATHY_API = "https://api.empathy.co/search/v1/query/carrefour/search";
 
-type EmpathyItem = {
-  display_name?: string;
-  active_price?: number;
-  urls?: { food?: string; nonFood?: string };
-  image_path?: { food?: string; nonFood?: string };
-  product_id?: string;
-  /** Numeric product quantity in unit_short_name units — e.g. 1.5 for 1.5 l, 56 for 56 ud */
-  unit_conversion_factor?: number;
-  /** Unit for unit_conversion_factor: "ud", "l", "ml", "cl", "kg", "g" */
-  unit_short_name?: string;
-  /** Same as unit_short_name; included as a fallback */
-  measure_unit?: string;
-};
+const EmpathyItemSchema = z
+  .object({
+    display_name: z.string().optional(),
+    active_price: z.number().optional(),
+    urls: z
+      .object({ food: z.string().optional(), nonFood: z.string().optional() })
+      .optional(),
+    image_path: z
+      .object({ food: z.string().optional(), nonFood: z.string().optional() })
+      .optional(),
+    product_id: z.string().optional(),
+    unit_conversion_factor: z.number().optional(),
+    unit_short_name: z.string().optional(),
+    measure_unit: z.string().optional(),
+  })
+  .loose();
 
-type EmpathyResponse = {
-  catalog?: { content?: EmpathyItem[] };
-};
+type EmpathyItem = z.infer<typeof EmpathyItemSchema>;
+
+const EmpathyResponseSchema = z
+  .object({
+    catalog: z
+      .object({ content: z.array(EmpathyItemSchema).default([]) })
+      .optional(),
+  })
+  .loose();
 
 type QuantityFields = Pick<
   SearchResult,
@@ -91,7 +101,16 @@ export class CarrefourSearchScraper implements StoreSearchScraper {
       });
       if (!response.ok) return [];
 
-      const data = (await response.json()) as EmpathyResponse;
+      const raw = await response.json();
+      const parsed = EmpathyResponseSchema.safeParse(raw);
+      if (!parsed.success) {
+        console.warn(
+          "[carrefour-search] Unexpected API response shape:",
+          parsed.error.issues[0]?.message,
+        );
+        return [];
+      }
+      const { data } = parsed;
       const items = data.catalog?.content ?? [];
 
       return items.slice(0, 5).flatMap((item) => {
