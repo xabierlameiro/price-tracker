@@ -1,4 +1,5 @@
 import { AhorramasSearchScraper } from "./ahorramas-search";
+import { ConsumSearchScraper } from "./consum-search";
 import { AlcampoSearchScraper } from "./alcampo-search";
 import { AldiSearchScraper } from "./aldi-search";
 import { AmazonSearchScraper } from "./amazon-search";
@@ -57,6 +58,7 @@ const activeScrapers: StoreSearchScraper[] = [
   new NappySearchScraper(),
   new MasPanalesSearchScraper(),
   new DiaSearchScraper(),
+  new ConsumSearchScraper(),
   // PromoFarma: React SPA — CSS selectors return 0 results from serverless (no real API found).
   // new PromoFarmaSearchScraper(),
   // Lidl: Nuxt.js SPA — window.__NUXT__ is empty; product grid requires JS execution.
