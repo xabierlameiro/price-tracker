@@ -6,8 +6,8 @@
  * NOT in regular pnpm test (vitest.config.ts excludes *.integration.test.ts).
  *
  * For each scraper the test:
- *   1. Runs 13 diverse product queries concurrently (food, drinks, dairy, baby
- *      consumables, cleaning, hygiene, pharmacy).
+ *   1. Runs 38 diverse product queries concurrently (food, drinks, dairy, baby
+ *      consumables, cleaning, hygiene, pharmacy) using top Spanish brands.
  *   2. Validates every returned result against SearchResultSchema (Zod).
  *      → A result that fails the schema is a hard test failure.
  *   3. Prints a coverage report showing how many results have packageSize /
@@ -36,6 +36,7 @@ import { FarmaVazquezSearchScraper } from "./farmavazquez-search";
 import { FroizSearchScraper } from "./froiz-search";
 import { GadisSearchScraper } from "./gadis-search";
 import { HipercorSearchScraper } from "./hipercor-search";
+import { LidlSearchScraper } from "./lidl-search";
 import { MasPanalesSearchScraper } from "./maspanales-search";
 import { MercadonaSearchScraper } from "./mercadona-search";
 import { NappySearchScraper } from "./nappy-search";
@@ -49,29 +50,67 @@ import { ViandviSearchScraper } from "./viandvi-search";
 // ── Test product corpus ───────────────────────────────────────────────────────
 
 /**
- * 13 queries covering diverse categories.
- * Each scraper type (supermarket / pharmacy / baby) will find results for the
- * subset that matches its catalogue.
+ * 38 queries covering all parser edge cases:
+ *   • ml containers (beverages, body care) → netWeight in ml
+ *   • g/kg packages (dry food, cosmetics) → netWeight in g
+ *   • unit packs (diapers, wipes, pills) → packageSize
+ *   • multi-packs (beer 6x33cl) → total volume or packageSize
+ *
+ * Each scraper type (supermarket / pharmacy / baby) finds results for the
+ * subset matching its catalogue.  0 results is not a failure.
  */
 const TEST_PRODUCTS = [
-  // Baby consumables
-  { query: "pañales dodot talla 5", category: "consumibles bebé" },
+  // ── Baby consumables (unit-count parsers) ────────────────────────────────
+  { query: "pañales dodot sensitive talla 5", category: "consumibles bebé" },
+  { query: "pañales pampers baby dry talla 5", category: "consumibles bebé" },
   { query: "toallitas dodot pure aqua", category: "consumibles bebé" },
-  // Dairy
-  { query: "leche asturiana", category: "lácteos" },
+  { query: "toallitas huggies pure 64", category: "consumibles bebé" },
+
+  // ── Dairy (ml / g parsers) ──────────────────────────────────────────────
+  { query: "leche entera asturiana", category: "lácteos" },
+  { query: "leche entera pascual", category: "lácteos" },
   { query: "yogur dalky chocolate", category: "lácteos" },
-  { query: "queso larsa", category: "lácteos" },
-  // Food / grocery
-  { query: "aceite oliva virgen extra carbonel", category: "alimentación" },
-  { query: "patatas fritas ruffles", category: "snacks" },
+  { query: "yogur activia danone natural", category: "lácteos" },
+  { query: "queso larsa lonchas", category: "lácteos" },
+  { query: "nata montar president", category: "lácteos" },
+
+  // ── Dry food (g/kg parsers) ─────────────────────────────────────────────
+  { query: "colacao original 800g", category: "alimentación" },
+  { query: "nutella 400g", category: "alimentación" },
+  { query: "pasta macarrones gallo", category: "alimentación" },
   { query: "arroz largo SOS", category: "alimentación" },
-  // Drinks
-  { query: "agua mineral cabreiroa", category: "bebidas" },
-  { query: "coca cola lata", category: "bebidas" },
+  { query: "harina trigo harimsa", category: "alimentación" },
+  { query: "galletas príncipe chocolate", category: "alimentación" },
+  { query: "tomate frito orlando", category: "alimentación" },
+  { query: "aceite oliva virgen extra carbonell", category: "alimentación" },
+  { query: "patatas fritas ruffles sal", category: "snacks" },
+  { query: "patatas pringles original", category: "snacks" },
+
+  // ── Beverages (ml parser + multi-pack) ──────────────────────────────────
+  { query: "agua mineral cabreiroa 1.5l", category: "bebidas" },
+  { query: "agua font vella 1.5l", category: "bebidas" },
+  { query: "coca cola lata 33cl", category: "bebidas" },
+  { query: "mahou cinco estrellas lata", category: "bebidas" },
   { query: "estrella galicia 0.0", category: "bebidas" },
-  // Personal care / pharmacy
-  { query: "desodorante AXE", category: "higiene" },
+  { query: "kas naranja lata", category: "bebidas" },
+  { query: "zumo naranja don simon", category: "bebidas" },
+
+  // ── Personal care (ml/g parsers) ────────────────────────────────────────
+  { query: "gel ducha dove original", category: "higiene" },
+  { query: "champu pantene reparador", category: "higiene" },
+  { query: "pasta dientes colgate triple accion", category: "higiene" },
+  { query: "desodorante nivea black white", category: "higiene" },
+  { query: "papel higienico scottex", category: "higiene doméstica" },
+
+  // ── Cleaning (ml/g parsers) ─────────────────────────────────────────────
+  { query: "detergente lavadora ariel", category: "limpieza" },
+  { query: "suavizante mimosin azul", category: "limpieza" },
+  { query: "lavavajillas fairy platinum", category: "limpieza" },
+
+  // ── Pharmacy (unit-count parsers + weight) ───────────────────────────────
   { query: "ibuprofeno 400mg", category: "farmacia" },
+  { query: "paracetamol kern pharma 650mg", category: "farmacia" },
+  { query: "vitamina c redoxon efervescente", category: "farmacia" },
 ] as const;
 
 // ── Types for the per-query report ───────────────────────────────────────────
@@ -430,5 +469,14 @@ describe("PromoFarma", () => {
     const reports = await runAllQueries(scraper);
     printReport(scraper.storeSlug, scraper.storeName, reports);
     assertNoSchemaFailures(scraper.storeName, reports);
+  });
+
+  describe("Lidl España", () => {
+    it("should not throw and should return schema-valid results (0 expected — SPA limitation)", async () => {
+      const scraper = new LidlSearchScraper();
+      const reports = await runAllQueries(scraper);
+      printReport(scraper.storeSlug, scraper.storeName, reports);
+      assertNoSchemaFailures(scraper.storeName, reports);
+    });
   });
 });

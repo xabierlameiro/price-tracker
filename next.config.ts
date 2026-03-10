@@ -109,6 +109,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "www.arenal.com" },
       { protocol: "https", hostname: "nappy.es" },
       { protocol: "https", hostname: "storage.googleapis.com" },
+      { protocol: "https", hostname: "cdn-consum.aktiosdigitalservices.com" },
     ],
   },
   logging: {
