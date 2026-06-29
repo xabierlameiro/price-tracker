@@ -24,8 +24,8 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       impit:
-        specifier: ^0.14.1
-        version: 0.14.1
+        specifier: ^0.14.2
+        version: 0.14.2
       next:
         specifier: 16.2.9
         version: 16.2.9(@babel/core@7.29.7)(@playwright/test@1.61.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -2694,6 +2694,7 @@ packages:
   git-raw-commits@5.0.1:
     resolution: {integrity: sha512-Y+csSm2GD/PCSh6Isd/WiMjNAydu0VBiG9J7EdQsNA5P9uXvLayqjmTsNlK5Gs9IhblFZqOU0yid5Il5JPoLiQ==}
     engines: {node: '>=18'}
+    deprecated: Deprecated and no longer maintained. Use @conventional-changelog/git-client instead.
     hasBin: true
 
   glob-parent@5.1.2:
@@ -2819,56 +2820,56 @@ packages:
   immer@11.1.4:
     resolution: {integrity: sha512-XREFCPo6ksxVzP4E0ekD5aMdf8WMwmdNaz6vuvxgI40UaEiu6q3p8X52aU6GdyvLY3XXX/8R7JOTXStz/nBbRw==}
 
-  impit-darwin-arm64@0.14.1:
-    resolution: {integrity: sha512-K3KXto3gzR60kOFFxRmuxPNl3sPhdTLLpjBIW3RKD6vJFiGV5YH/T218WBECygPxRaIhESfsxfcOYrP53bHgFw==}
+  impit-darwin-arm64@0.14.2:
+    resolution: {integrity: sha512-ChvxbJj893rWAhHXJ3kkGe8Pg4lsZwQ1Dt0w/noCkNe436gm0nIQ/eBBbwIJBsY4Ev7q6fgi/QerF2trSyUXmg==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [darwin]
 
-  impit-darwin-x64@0.14.1:
-    resolution: {integrity: sha512-k+w8SBHUtLX3KbzsCqSmcwitHfbOXXsLryL++KVahtFqU5D93T1buoTANnd63/mm5dNyadecIGG0MQ7SwvWx8g==}
+  impit-darwin-x64@0.14.2:
+    resolution: {integrity: sha512-r1g3WkwljcRgY1V0yBCUJ0/Sy6OHLc4RUrfz3mHi2X4WvkTk7aY17K4X+baBx+tcpOfE/ME/iWAY/PesOM9JVA==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [darwin]
 
-  impit-linux-arm64-gnu@0.14.1:
-    resolution: {integrity: sha512-yBT7h6cVHL/hefzI/qjJc22fKP386O0inReOpUzCnb4SGnwhEHvL9nJk3OzU2prO9vvKNKSb6vfRBcvQ8HHH1g==}
+  impit-linux-arm64-gnu@0.14.2:
+    resolution: {integrity: sha512-JZJqUnEqFiktcXVgg/AIKkSv8SGu5zoQ7lf9CSvS0eEiwSlHnLUPwBiFc9/mSHDIUQkM9qlvJyGUiGqGEt9K6A==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
 
-  impit-linux-arm64-musl@0.14.1:
-    resolution: {integrity: sha512-lFatihYntVIN814AnoNm/hSw5iONLKt6XtaAaJahZNdJOU+zsclcg9pbK0/61aENamkpIBpok/H8j5Sw/Xjuuw==}
+  impit-linux-arm64-musl@0.14.2:
+    resolution: {integrity: sha512-ZsL9JAFEZBP3tvT8h4pkcg/b/MtHP8mZSgsncD6z9+qKM/IjqiDYwQunKaAYMwGu0EEbjtaU4C1zTK6ipnvwbA==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
 
-  impit-linux-x64-gnu@0.14.1:
-    resolution: {integrity: sha512-oioVQzHqSi68BzxRpVLbNv9HRgOxAA21QNlzCMyeEM3/c02MkURCQ1W66yAlEFOR1gaqPZDJi/ymnmIGk6+PjQ==}
+  impit-linux-x64-gnu@0.14.2:
+    resolution: {integrity: sha512-3/keeSOCiByIfbOpmvixRXDlCdcyf112ru0fNl7AcpC1RtQz48ctsAn6R4+xEEnULO63By5VK9X0HNm1O2gUdw==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
 
-  impit-linux-x64-musl@0.14.1:
-    resolution: {integrity: sha512-v7fBi405zZepQo0LqH51H+aXc/MYEtrQviIK+34kEqFBYOaSC9+wFZrs6A4WwrF9DaUuRZ3klisljwglN7rxDQ==}
+  impit-linux-x64-musl@0.14.2:
+    resolution: {integrity: sha512-BiUXZhj6lQOrZmeYB4HqYiBS5XvM/clrSVyZyae/CJshELUyYOLNxnTOxabd0tWR6J9ntC7bZwDrwskWD/TePA==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
 
-  impit-win32-arm64-msvc@0.14.1:
-    resolution: {integrity: sha512-W4kPvvra8dXDdtJQbkxWPCCouUlZpOrLqHsJ7gc8CwAr69ljZqw6v+qB395nCD1rn3u32dV4d4fjBsyMdolQoA==}
+  impit-win32-arm64-msvc@0.14.2:
+    resolution: {integrity: sha512-GQT3ITrIbh5P6FLzoHGuBpjrP/rzZoC3T0510+yCtLdQ1qQQzEIi1iCUElpCokyL4J/D4BdCRMS3wv3TzhcM4w==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [win32]
 
-  impit-win32-x64-msvc@0.14.1:
-    resolution: {integrity: sha512-gwzWsaORyzq294t8CCxfHAmqulnQNQZK8ad8YM6oQaGVXeUFa8r/ZnR+PglfYcrYF/GbYwGrf9U8StUU8KFLmQ==}
+  impit-win32-x64-msvc@0.14.2:
+    resolution: {integrity: sha512-J6MpD0GzoMN9ydb2iT2oagE0Y4rbkKf8fDxrMh3/txp2sfzYDDfbcC4sySMm2b8QB4ERhB6N5YzcpGBAHbx/0w==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
 
-  impit@0.14.1:
-    resolution: {integrity: sha512-ooFuGjrJzV16S5y4t7ICpfaAapNRrrUCv3cd5xIPKUqbbgKtx7CbVB+w+YRDMntoHwjuZ9ijI2AM8hMKISbvcw==}
+  impit@0.14.2:
+    resolution: {integrity: sha512-8JlirJDFdrZg7a7nV00Jn5WO8K+X1FJQSVFrChxRyzkSAFv6mmGgriXS33wbJFUxpiOGY/MJpHY8hhmLfDcJDw==}
     engines: {node: '>= 20'}
 
   import-fresh@3.3.1:
@@ -3297,6 +3298,11 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
+  nanoid@3.3.15:
+    resolution: {integrity: sha512-y7Wygv/7mEOvxTuEQDB8StXdMRBWf1kR/tlhAzBRUFkB2jfcLOAxO/SHmOO2zgz1pVgK29/kyupn059/bCHdjA==}
+    engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
+    hasBin: true
+
   napi-postinstall@0.3.4:
     resolution: {integrity: sha512-PHI5f1O0EP5xJ9gQmFGMS6IZcrVvTjpXjz7Na41gTE7eE2hK11lg04CECCYEEjdc17EV4DO+fkGEtt7TpTaTiQ==}
     engines: {node: ^12.20.0 || ^14.18.0 || >=16.0.0}
@@ -3534,6 +3540,10 @@ packages:
 
   postcss@8.5.15:
     resolution: {integrity: sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==}
+    engines: {node: ^10 || ^12 || >=14}
+
+  postcss@8.5.16:
+    resolution: {integrity: sha512-vuwillviilfKZsg0VGj5R/YwwcHx4SLsIOI/7K6mQkWx+l5cUHTjj5g0AasTBcyXsbfTgrwsUNmVUb5xVwyPwg==}
     engines: {node: ^10 || ^12 || >=14}
 
   postgres-array@2.0.0:
@@ -7048,40 +7058,40 @@ snapshots:
 
   immer@11.1.4: {}
 
-  impit-darwin-arm64@0.14.1:
+  impit-darwin-arm64@0.14.2:
     optional: true
 
-  impit-darwin-x64@0.14.1:
+  impit-darwin-x64@0.14.2:
     optional: true
 
-  impit-linux-arm64-gnu@0.14.1:
+  impit-linux-arm64-gnu@0.14.2:
     optional: true
 
-  impit-linux-arm64-musl@0.14.1:
+  impit-linux-arm64-musl@0.14.2:
     optional: true
 
-  impit-linux-x64-gnu@0.14.1:
+  impit-linux-x64-gnu@0.14.2:
     optional: true
 
-  impit-linux-x64-musl@0.14.1:
+  impit-linux-x64-musl@0.14.2:
     optional: true
 
-  impit-win32-arm64-msvc@0.14.1:
+  impit-win32-arm64-msvc@0.14.2:
     optional: true
 
-  impit-win32-x64-msvc@0.14.1:
+  impit-win32-x64-msvc@0.14.2:
     optional: true
 
-  impit@0.14.1:
+  impit@0.14.2:
     optionalDependencies:
-      impit-darwin-arm64: 0.14.1
-      impit-darwin-x64: 0.14.1
-      impit-linux-arm64-gnu: 0.14.1
-      impit-linux-arm64-musl: 0.14.1
-      impit-linux-x64-gnu: 0.14.1
-      impit-linux-x64-musl: 0.14.1
-      impit-win32-arm64-msvc: 0.14.1
-      impit-win32-x64-msvc: 0.14.1
+      impit-darwin-arm64: 0.14.2
+      impit-darwin-x64: 0.14.2
+      impit-linux-arm64-gnu: 0.14.2
+      impit-linux-arm64-musl: 0.14.2
+      impit-linux-x64-gnu: 0.14.2
+      impit-linux-x64-musl: 0.14.2
+      impit-win32-arm64-msvc: 0.14.2
+      impit-win32-x64-msvc: 0.14.2
 
   import-fresh@3.3.1:
     dependencies:
@@ -7486,6 +7496,8 @@ snapshots:
 
   nanoid@3.3.12: {}
 
+  nanoid@3.3.15: {}
+
   napi-postinstall@0.3.4: {}
 
   natural-compare@1.4.0: {}
@@ -7721,6 +7733,12 @@ snapshots:
   postcss@8.5.15:
     dependencies:
       nanoid: 3.3.12
+      picocolors: 1.1.1
+      source-map-js: 1.2.1
+
+  postcss@8.5.16:
+    dependencies:
+      nanoid: 3.3.15
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
@@ -8416,7 +8434,7 @@ snapshots:
       esbuild: 0.27.7
       fdir: 6.5.0(picomatch@4.0.4)
       picomatch: 4.0.4
-      postcss: 8.5.15
+      postcss: 8.5.16
       rollup: 4.62.2
       tinyglobby: 0.2.17
     optionalDependencies:
